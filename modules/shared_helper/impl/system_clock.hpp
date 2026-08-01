@@ -19,7 +19,8 @@ public:
     SystemClock& operator=(const SystemClock&) = delete;
 
     std::chrono::system_clock::time_point now() const override;
-    void scheduleOnce(std::chrono::milliseconds delay, std::function<void()> cb) override;
+    TimerHandle scheduleOnce(std::chrono::milliseconds delay, std::function<void()> cb) override;
+    void cancel(TimerHandle handle) override;
     void cancelAll() override;
 
 private:

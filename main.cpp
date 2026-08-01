@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     dispenser_service::DummyDispenser dispenser(clock, logger);
 
     vending_engine_service::VendingEngineService vendingEngineService(stateStore, cloudService, dispenser, uuidGen,
-                                                                        logger);
+                                                                        clock, logger);
     vendingEngineService.start();
 
     // DummyCardReader calls straight into vendingEngineService::onCardTapped()

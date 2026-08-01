@@ -21,7 +21,10 @@ ApplicationWindow {
         ProductGrid {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            enabled: !controller.dispensing
+            // Only selectable once a card has been tapped (CardRead); grayed
+            // out in Idle, and again once a product is picked (Dispensing)
+            // or the selection timeout returns the engine to Idle.
+            enabled: controller.stateName === "CardRead"
         }
 
         Button {

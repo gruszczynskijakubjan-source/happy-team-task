@@ -29,3 +29,10 @@ target_link_libraries(cloud_service_rest_transport PUBLIC
 target_compile_features(cloud_service_rest_transport PUBLIC cxx_std_20)
 
 add_library(vending::cloud_service::rest_transport ALIAS cloud_service_rest_transport)
+
+add_library(cloud_service_mocks INTERFACE)
+
+target_include_directories(cloud_service_mocks INTERFACE ${CMAKE_SOURCE_DIR}/modules)
+target_link_libraries(cloud_service_mocks INTERFACE cloud_service GTest::gmock)
+
+add_library(vending::cloud_service::mocks ALIAS cloud_service_mocks)

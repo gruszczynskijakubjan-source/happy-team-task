@@ -4,6 +4,28 @@
 
 namespace vending::ui_service {
 
+namespace {
+
+QString toQString(vending_engine_service::State state) {
+    switch (state) {
+        case vending_engine_service::State::Idle:
+            return QStringLiteral("Idle");
+        case vending_engine_service::State::CardRead:
+            return QStringLiteral("CardRead");
+        case vending_engine_service::State::ProductSelected:
+            return QStringLiteral("ProductSelected");
+        case vending_engine_service::State::Dispensing:
+            return QStringLiteral("Dispensing");
+        case vending_engine_service::State::Completed:
+            return QStringLiteral("Completed");
+        case vending_engine_service::State::Failed:
+            return QStringLiteral("Failed");
+    }
+    return QStringLiteral("Unknown");
+}
+
+}  // namespace
+
 VendingController::VendingController(vending_engine_service::IVendingEngineService& vendingEngineService
     , cloud_service::CloudService& cloudService
     , rfid_service::ICardReader& cardReader
@@ -12,9 +34,19 @@ VendingController::VendingController(vending_engine_service::IVendingEngineServi
     , m_vendingEngineService(vendingEngineService)
     , m_cloudService(cloudService)
     , m_cardReader(cardReader)
-    , m_logger(logger) {
+    , m_logger(logger)
+    , m_stateName(toQString(vendingEngineService.state())) {
     m_logger.log(shared_helper::logging::LogLevel::Trace, "VendingController", "VendingController()");
 
+    m_vendingEngineService.setOnStateChanged([this](vending_engine_service::State state) {
+        QMetaObject::invokeMethod(
+            this,
+            [this, state] {
+                m_stateName = toQString(state);
+                emit stateChanged();
+            },
+            Qt::QueuedConnection);
+    });
     m_vendingEngineService.setOnDispenseProgress([this](int progress) {
         QMetaObject::invokeMethod(
             this,
@@ -40,8 +72,7 @@ VendingController::~VendingController() {
 }
 
 QString VendingController::stateName() const {
-    // TODO: implement
-    return {};
+    return m_stateName;
 }
 
 bool VendingController::dispensing() const {

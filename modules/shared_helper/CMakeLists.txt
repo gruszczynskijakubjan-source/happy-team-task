@@ -29,3 +29,10 @@ target_link_libraries(shared_helper
 target_compile_features(shared_helper PUBLIC cxx_std_20)
 
 add_library(vending::shared_helper ALIAS shared_helper)
+
+add_library(shared_helper_mocks INTERFACE)
+
+target_include_directories(shared_helper_mocks INTERFACE ${CMAKE_SOURCE_DIR}/modules)
+target_link_libraries(shared_helper_mocks INTERFACE shared_helper GTest::gmock)
+
+add_library(vending::shared_helper::mocks ALIAS shared_helper_mocks)
