@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vending Machine — Architecture (C4)</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1d24;
+    --muted: #5a6270;
+    --border: #e2e5ea;
+    --card-bg: #f7f8fa;
+    --accent: #3d5c78;
+    --accent-bg: #e7edf2;
+    --code-bg: #f0f1f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --fg: #e8e9ec;
+      --muted: #9aa1ad;
+      --border: #2a2d34;
+      --card-bg: #1c1f25;
+      --accent: #8fb4d9;
+      --accent-bg: #1f2b36;
+      --code-bg: #20232a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+  header {
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+  }
+  h1 { font-size: 1.8rem; margin: 0 0 0.4rem; }
+  .subtitle { color: var(--muted); font-size: 0.95rem; }
+  h2 {
+    font-size: 1.35rem;
+    margin-top: 3rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.05rem;
+    margin-top: 2rem;
+    color: var(--accent);
+    font-family: "SF Mono", "Courier New", monospace;
+  }
+  nav {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-size: 0.92rem;
+  }
+  nav ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+  nav a { color: var(--accent); text-decoration: none; }
+  nav a:hover { text-decoration: underline; }
+  p { color: var(--fg); }
+  .lede { color: var(--muted); font-size: 0.95rem; }
+  figure {
+    margin: 1.25rem 0;
+    text-align: center;
+  }
+  figure img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+  }
+  figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  ul.plain { margin: 0.5rem 0; padding-left: 1.4rem; }
+  ul.plain li { margin: 0.3rem 0; }
+  .service-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.1rem 1.4rem;
+    margin: 1rem 0;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .legend-swatch {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    border-radius: 3px;
+    margin-right: 0.35em;
+    vertical-align: -0.05em;
+  }
+  code, pre {
+    font-family: "SF Mono", "Courier New", monospace;
+    background: var(--code-bg);
+    border-radius: 4px;
+  }
+  code { padding: 0.1em 0.4em; font-size: 0.88em; }
+  pre {
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+  }
+  pre code { background: none; padding: 0; }
+  a { color: var(--accent); }
+  .footer-note {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Vending Machine — Architecture (C4)</h1>
+  <p class="subtitle">Structural view: System Context (C1) → Container (C2) → Component (C3)</p>
+</header>
+
+<p class="lede">
+  This document describes the architecture using the
+  <a href="https://c4model.com/" target="_blank" rel="noopener">C4 model</a>.
+  Diagrams for C1/C2 are generated from
+  <code>diagrams/c1-context.drawio</code> and <code>diagrams/c2-container.drawio</code>
+  — this page only renders and describes what's on those diagrams; it does
+  not add anything beyond them. C3 is left as placeholders below, to be
+  filled in per component.
+</p>
+
+<nav>
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#c1">C1 — System Context</a></li>
+    <li><a href="#c2">C2 — Container</a></li>
+    <li><a href="#c3">C3 — Component (per-service description)</a>
+      <ul>
+        <li><a href="#shared_helper">shared_helper</a></li>
+        <li><a href="#cloud_service">cloud_service</a></li>
+        <li><a href="#dispenser_service">dispenser_service</a></li>
+        <li><a href="#rfid_service">rfid_service</a></li>
+        <li><a href="#vending_engine_service">vending_engine_service</a></li>
+        <li><a href="#ui_service">ui_service</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+<h2 id="c1">C1 — System Context</h2>
+<figure>
+  <img src="diagrams/c1-context.png" alt="C1 System Context diagram">
+  <figcaption>Fig. 1 — System context: client, vending machine, backend REST, operator</figcaption>
+</figure>
+
+<h2 id="c2">C2 — Container</h2>
+<p>What the vending machine is built from internally.</p>
+<figure>
+  <img src="diagrams/c2-container.png" alt="C2 Container diagram">
+  <figcaption>Fig. 2 — Services inside the vending machine</figcaption>
+</figure>
+<ul class="plain">
+  <li><strong>ui_service</strong> — GUI for product selection; also simulates RFID card taps (only for simulation, per the diagram) and drives product selection.</li>
+  <li><strong>rfid_service</strong> — RFID driver. Out of scope / mock.</li>
+  <li><strong>dispenser_service</strong> — dispenser driver. Out of scope / mock.</li>
+  <li><strong>vending_engine_service</strong> — transaction cycle orchestration.</li>
+  <li><strong>cloud_service</strong> — uploads vended-transaction data to the cloud.</li>
+  <li><strong>shared_helper</strong> — reusable code shared by all modules.</li>
+</ul>
+<p>
+  Legend (from the diagram):
+  <span class="legend-swatch" style="background:#dae8fc;border:1px solid #6c8ebf;"></span>Implementation
+  &nbsp;&nbsp;
+  <span class="legend-swatch" style="background:#ffe6cc;border:1px solid #d79b00;"></span>Mock
+  &nbsp;&nbsp;
+  <span class="legend-swatch" style="background:#BDC8DA;border:1px solid #6c8ebf;"></span>Shared lib
+</p>
+
+<h2 id="c3">C3 — Component (per-service description)</h2>
+<p><em>Per-component breakdown — to be filled in.</em></p>
+
+<h3 id="shared_helper">shared_helper</h3>
+<div class="service-card">TODO</div>
+
+<h3 id="cloud_service">cloud_service</h3>
+<div class="service-card">TODO</div>
+
+<h3 id="dispenser_service">dispenser_service</h3>
+<div class="service-card">TODO</div>
+
+<h3 id="rfid_service">rfid_service</h3>
+<div class="service-card">TODO</div>
+
+<h3 id="vending_engine_service">vending_engine_service</h3>
+<div class="service-card">TODO</div>
+
+<h3 id="ui_service">ui_service</h3>
+<div class="service-card">TODO</div>
+
+</div>
+</body>
+</html>
