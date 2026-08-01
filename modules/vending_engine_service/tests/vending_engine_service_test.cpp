@@ -34,6 +34,10 @@ protected:
         EXPECT_CALL(dispenser, setOnProgress(_)).WillOnce(SaveArg<0>(&onProgress));
         EXPECT_CALL(dispenser, setOnResult(_)).WillOnce(SaveArg<0>(&onResult));
 
+        // Same idea for cloudService's pending-count/online callbacks.
+        EXPECT_CALL(cloudService, setOnPendingCountChanged(_)).WillOnce(SaveArg<0>(&onPendingCountChanged));
+        EXPECT_CALL(cloudService, setOnOnlineChanged(_)).WillOnce(SaveArg<0>(&onOnlineChanged));
+
         service = std::make_unique<VendingEngineService>(stateStore, cloudService, dispenser, uuidGen, clock, logger,
                                                            std::chrono::milliseconds{15000});
     }
@@ -49,6 +53,8 @@ protected:
 
     std::function<void(int)> onProgress;
     std::function<void(bool)> onResult;
+    std::function<void(std::size_t)> onPendingCountChanged;
+    std::function<void(bool)> onOnlineChanged;
 
     std::unique_ptr<VendingEngineService> service;
 };
@@ -179,6 +185,84 @@ TEST_F(VendingEngineServiceTest, CardTapAfterTimeoutStartsFreshTransaction) {
     service->onCardTapped("card-2");
 
     EXPECT_EQ(service->state(), State::CardRead);
+}
+
+TEST_F(VendingEngineServiceTest, StartWithNoSavedStateStaysIdle) {
+    ON_CALL(stateStore, load()).WillByDefault(Return(std::nullopt));
+    EXPECT_CALL(cloudService, send(_)).Times(0);
+
+    service->start();
+
+    EXPECT_EQ(service->state(), State::Idle);
+}
+
+TEST_F(VendingEngineServiceTest, StartRecoversDispensingAsUnknownNeedsReconciliation) {
+    shared_helper::persistence::MachineState saved;
+    saved.fsmState = "Dispensing";
+    saved.activeTransaction = shared_helper::TransactionRecord{.id = "tx-interrupted", .cardId = kCardId, .productId = {}, .createdAt = {}, .updatedAt = {}, .syncedAt = {}};
+    ON_CALL(stateStore, load()).WillByDefault(Return(saved));
+
+    EXPECT_CALL(cloudService, send(AllOf(Field(&shared_helper::TransactionRecord::id, std::string("tx-interrupted")),
+                                          Field(&shared_helper::TransactionRecord::status,
+                                                shared_helper::TxStatus::UnknownNeedsReconciliation))));
+    EXPECT_CALL(stateStore, clear());
+
+    service->start();
+
+    EXPECT_EQ(service->state(), State::Idle);
+}
+
+TEST_F(VendingEngineServiceTest, StartRecoversCardReadAsFailed) {
+    shared_helper::persistence::MachineState saved;
+    saved.fsmState = "CardRead";
+    saved.activeTransaction = shared_helper::TransactionRecord{.id = "tx-interrupted", .cardId = kCardId, .productId = {}, .createdAt = {}, .updatedAt = {}, .syncedAt = {}};
+    ON_CALL(stateStore, load()).WillByDefault(Return(saved));
+
+    EXPECT_CALL(cloudService, send(Field(&shared_helper::TransactionRecord::status, shared_helper::TxStatus::Failed)));
+    EXPECT_CALL(stateStore, clear());
+
+    service->start();
+
+    EXPECT_EQ(service->state(), State::Idle);
+}
+
+TEST_F(VendingEngineServiceTest, ServiceUsableAfterRecovery) {
+    shared_helper::persistence::MachineState saved;
+    saved.fsmState = "Dispensing";
+    saved.activeTransaction = shared_helper::TransactionRecord{.id = "tx-interrupted", .cardId = kCardId, .productId = {}, .createdAt = {}, .updatedAt = {}, .syncedAt = {}};
+    ON_CALL(stateStore, load()).WillByDefault(Return(saved));
+    service->start();
+    ASSERT_EQ(service->state(), State::Idle);
+
+    EXPECT_CALL(uuidGen, generate()).WillOnce(Return("tx-fresh"));
+    tapCard();
+
+    EXPECT_EQ(service->state(), State::CardRead);
+}
+
+TEST_F(VendingEngineServiceTest, PendingSyncCountForwardsFromCloudService) {
+    std::vector<std::size_t> observed;
+    service->setOnPendingSyncCountChanged([&observed](std::size_t count) { observed.push_back(count); });
+
+    ASSERT_TRUE(onPendingCountChanged);
+    onPendingCountChanged(3);
+    onPendingCountChanged(2);
+
+    // The first entry is the replay of the last-known value (0) done by
+    // setOnPendingSyncCountChanged() itself, mirroring how state() is
+    // replayed via setOnStateChanged().
+    EXPECT_THAT(observed, ::testing::ElementsAre(0u, 3u, 2u));
+}
+
+TEST_F(VendingEngineServiceTest, OnlineForwardsFromCloudService) {
+    std::vector<bool> observed;
+    service->setOnOnlineChanged([&observed](bool online) { observed.push_back(online); });
+
+    ASSERT_TRUE(onOnlineChanged);
+    onOnlineChanged(false);
+    onOnlineChanged(true);
+
+    EXPECT_THAT(observed, ::testing::ElementsAre(true, false, true));
 }
 
 }  // namespace

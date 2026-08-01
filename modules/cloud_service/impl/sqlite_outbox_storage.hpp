@@ -15,11 +15,14 @@ class SqliteOutboxStorage final : public IOutboxStorage {
         , shared_helper::logging::ILogger& logger
     );
 
-    void store(const shared_helper::TransactionRecord& tx) override;
-    shared_helper::TransactionRecord getOldestRecord() override;
+    bool store(const shared_helper::TransactionRecord& tx) override;
+    std::optional<shared_helper::TransactionRecord> getOldestUnsynced() override;
+    std::size_t countUnsynced() override;
     void markSynced(const std::string& id) override;
 
  private:
+    void ensureSchema();
+
     shared_helper::sql::ISqlAdapter& m_sqlAdapter;
     shared_helper::logging::ILogger& m_logger;
 };

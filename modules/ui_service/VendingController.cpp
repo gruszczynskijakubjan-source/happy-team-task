@@ -65,6 +65,24 @@ VendingController::VendingController(vending_engine_service::IVendingEngineServi
             },
             Qt::QueuedConnection);
     });
+    m_vendingEngineService.setOnPendingSyncCountChanged([this](std::size_t count) {
+        QMetaObject::invokeMethod(
+            this,
+            [this, count] {
+                m_pendingSyncCount = static_cast<int>(count);
+                emit pendingSyncCountChanged();
+            },
+            Qt::QueuedConnection);
+    });
+    m_vendingEngineService.setOnOnlineChanged([this](bool online) {
+        QMetaObject::invokeMethod(
+            this,
+            [this, online] {
+                m_online = online;
+                emit onlineChanged();
+            },
+            Qt::QueuedConnection);
+    });
 }
 
 VendingController::~VendingController() {
@@ -84,13 +102,11 @@ int VendingController::dispenseProgress() const {
 }
 
 bool VendingController::online() const {
-    // TODO: implement
-    return false;
+    return m_online;
 }
 
 int VendingController::pendingSyncCount() const {
-    // TODO: implement
-    return 0;
+    return m_pendingSyncCount;
 }
 
 void VendingController::simulateCardTap() {

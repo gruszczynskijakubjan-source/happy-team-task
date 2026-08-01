@@ -9,6 +9,9 @@ namespace vending::cloud_service::mocks {
 class MockCloudService : public ICloudService {
 public:
     MOCK_METHOD(void, send, (const shared_helper::TransactionRecord& tx), (override));
+    MOCK_METHOD(void, setOnPendingCountChanged, (std::function<void(std::size_t)> onPendingCountChanged),
+                (override));
+    MOCK_METHOD(void, setOnOnlineChanged, (std::function<void(bool)> onOnlineChanged), (override));
 };
 
 }  // namespace vending::cloud_service::mocks

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <mutex>
 #include <optional>
@@ -57,6 +58,8 @@ public:
     void setOnDispenseProgress(std::function<void(int)> onDispenseProgress) override;
     void setOnDispenseFinished(std::function<void(bool)> onDispenseFinished) override;
     void setOnStateChanged(std::function<void(State)> onStateChanged) override;
+    void setOnPendingSyncCountChanged(std::function<void(std::size_t)> onPendingSyncCountChanged) override;
+    void setOnOnlineChanged(std::function<void(bool)> onOnlineChanged) override;
 
 private:
     void transitionTo(State next);
@@ -82,6 +85,17 @@ private:
     std::function<void(int)> m_onDispenseProgress;
     std::function<void(bool)> m_onDispenseFinished;
     std::function<void(State)> m_onStateChanged;
+    std::function<void(std::size_t)> m_onPendingSyncCountChanged;
+    std::function<void(bool)> m_onOnlineChanged;
+
+    // Mirrors of ICloudService's last-reported values, kept so a
+    // setOnPendingSyncCountChanged()/setOnOnlineChanged() call made after
+    // construction (e.g. by VendingController) can be replayed with the
+    // current value immediately, the same way setOnStateChanged() would
+    // via state() — ICloudService itself exposes no getters, only
+    // callbacks.
+    std::atomic<std::size_t> m_lastPendingSyncCount{0};
+    std::atomic<bool> m_lastOnline{true};
 };
 
 }  // namespace vending::vending_engine_service

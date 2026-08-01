@@ -20,7 +20,7 @@ class RestTransport final : public ICloudSender {
     RestTransport(const RestTransport&) = delete;
     RestTransport& operator=(const RestTransport&) = delete;
 
-    void send(const shared_helper::TransactionRecord& tx) override;
+    SendStatus send(const shared_helper::TransactionRecord& tx) override;
 
  private:
     std::string m_baseUrl;

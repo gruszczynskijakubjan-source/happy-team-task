@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <functional>
 #include <string>
 
@@ -40,6 +41,12 @@ class IVendingEngineService {
     // Fired whenever the FSM transitions; lets UI code react without
     // polling state().
     virtual void setOnStateChanged(std::function<void(State)> onStateChanged) = 0;
+
+    // Forwarded from ICloudService's own callbacks, so UI code only ever
+    // has to depend on this interface (see VendingEngineService, which
+    // subscribes to cloud_service and re-publishes here).
+    virtual void setOnPendingSyncCountChanged(std::function<void(std::size_t)> onPendingSyncCountChanged) = 0;
+    virtual void setOnOnlineChanged(std::function<void(bool)> onOnlineChanged) = 0;
 };
 
 }  // namespace vending::vending_engine_service

@@ -54,6 +54,8 @@ class VendingController final : public QObject {
     bool m_dispensing = false;
     int m_dispenseProgress = 0;
     QString m_stateName;
+    bool m_online = false;
+    int m_pendingSyncCount = 0;
 };
 
 }  // namespace vending::ui_service

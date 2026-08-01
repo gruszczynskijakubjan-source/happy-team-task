@@ -45,13 +45,44 @@ VendingEngineService::VendingEngineService(shared_helper::persistence::IMachineS
             m_onDispenseProgress(progress);
         }
     });
-    m_dispenser.setOnResult([this](bool ok) { onDispenseResult(ok); });
+    m_dispenser.setOnResult([this](bool ok) {
+        onDispenseResult(ok);
+    });
+
+    m_cloudService.setOnPendingCountChanged([this](std::size_t count) {
+        m_lastPendingSyncCount = count;
+        if (m_onPendingSyncCountChanged) {
+            m_onPendingSyncCountChanged(count);
+        }
+    });
+    m_cloudService.setOnOnlineChanged([this](bool online) {
+        m_lastOnline = online;
+        if (m_onOnlineChanged) {
+            m_onOnlineChanged(online);
+        }
+    });
 }
 
 void VendingEngineService::start() {
+    std::lock_guard lock(m_mutex);
+
     m_logger.log(shared_helper::logging::LogLevel::Trace, "VendingEngineService", "start()");
-    // TODO: recover m_currentTransaction/m_state from m_stateStore.load()
-    // after a crash mid-dispense.
+
+    const std::optional<shared_helper::persistence::MachineState> saved = m_stateStore.load();
+    if (!saved || !saved->activeTransaction) {
+        return;
+    }
+
+    const bool wasDispensing = saved->fsmState == stateName(State::Dispensing);
+    m_logger.log(shared_helper::logging::LogLevel::Warn, "VendingEngineService",
+                 "recovered interrupted transaction " + saved->activeTransaction->id + " (fsmState=" +
+                 saved->fsmState + "), reporting as " +
+                 (wasDispensing ? "UnknownNeedsReconciliation" : "Failed"));
+
+    m_currentTransaction = saved->activeTransaction;
+    finishTransaction(wasDispensing ? shared_helper::TxStatus::UnknownNeedsReconciliation
+                                     : shared_helper::TxStatus::Failed);
+    transitionTo(State::Idle);
 }
 
 void VendingEngineService::onCardTapped(const std::string& cardId) {
@@ -190,6 +221,21 @@ void VendingEngineService::setOnDispenseFinished(std::function<void(bool)> onDis
 
 void VendingEngineService::setOnStateChanged(std::function<void(State)> onStateChanged) {
     m_onStateChanged = std::move(onStateChanged);
+}
+
+void VendingEngineService::setOnPendingSyncCountChanged(
+    std::function<void(std::size_t)> onPendingSyncCountChanged) {
+    m_onPendingSyncCountChanged = std::move(onPendingSyncCountChanged);
+    if (m_onPendingSyncCountChanged) {
+        m_onPendingSyncCountChanged(m_lastPendingSyncCount);
+    }
+}
+
+void VendingEngineService::setOnOnlineChanged(std::function<void(bool)> onOnlineChanged) {
+    m_onOnlineChanged = std::move(onOnlineChanged);
+    if (m_onOnlineChanged) {
+        m_onOnlineChanged(m_lastOnline);
+    }
 }
 
 }  // namespace vending::vending_engine_service

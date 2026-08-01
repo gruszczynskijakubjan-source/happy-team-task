@@ -42,6 +42,7 @@ add_subdirectory(modules/vending_engine_service)
 if(VENDING_BUILD_TESTS)
   add_subdirectory(modules/shared_helper/tests)
   add_subdirectory(modules/vending_engine_service/tests)
+  add_subdirectory(modules/cloud_service/tests)
 endif()
 
 # ui_service: Qt/QML shell, opt-in (requires Qt6 installed). vending_app is

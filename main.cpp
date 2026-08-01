@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
 
     QGuiApplication app(argc, argv);
 
+    // TODO: all these objects shall be moved to proper startups/factory
     shared_helper::logging::ConsoleLogger logger;
     shared_helper::SystemClock clock;
     shared_helper::RandomUuidGenerator uuidGen(logger);
@@ -38,8 +39,13 @@ int main(int argc, char* argv[]) {
     // dispense cycle and a card tap, both triggerable from the UI.
     dispenser_service::DummyDispenser dispenser(clock, logger);
 
-    vending_engine_service::VendingEngineService vendingEngineService(stateStore, cloudService, dispenser, uuidGen,
-                                                                        clock, logger);
+    vending_engine_service::VendingEngineService vendingEngineService(stateStore
+        , cloudService
+        , dispenser
+        , uuidGen
+        , clock
+        , logger
+    );
     vendingEngineService.start();
 
     // DummyCardReader calls straight into vendingEngineService::onCardTapped()

@@ -5,6 +5,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <nlohmann/json.hpp>
 
 namespace vending::shared_helper::persistence {
@@ -75,23 +78,37 @@ TransactionRecord fromJson(const json& j) {
 }  // namespace
 
 JsonMachineStateStore::JsonMachineStateStore(std::string path, logging::ILogger& logger)
-    : m_path(std::move(path)), m_logger(logger) {
+    : m_path(std::move(path))
+    , m_logger(logger) {
     m_logger.log(logging::LogLevel::Trace, "JsonMachineStateStore", "JsonMachineStateStore()");
 }
 
 void JsonMachineStateStore::save(const MachineState& state) {
     m_logger.log(logging::LogLevel::Trace, "JsonMachineStateStore", "save()");
-    json j;
+    json j {};
     j["fsmState"] = state.fsmState;
-    j["activeTransaction"] =
-        state.activeTransaction.has_value() ? toJson(*state.activeTransaction) : json(nullptr);
+    j["activeTransaction"] =state.activeTransaction.has_value() ? toJson(*state.activeTransaction) : json(nullptr);
 
     const std::string tmpPath = m_path + ".tmp";
     {
         std::ofstream out(tmpPath, std::ios::trunc);
         out << j.dump(2);
+        out.flush();
+
+        if (int fd = ::open(tmpPath.c_str(), O_WRONLY); fd >= 0) {
+            ::fsync(fd);
+            ::close(fd);
+        }
     }
+
     std::rename(tmpPath.c_str(), m_path.c_str());
+
+    const auto lastSlash = m_path.find_last_of('/');
+    const std::string dir = lastSlash == std::string::npos ? "." : m_path.substr(0, lastSlash);
+    if (int dirFd = ::open(dir.c_str(), O_RDONLY); dirFd >= 0) {
+        ::fsync(dirFd);
+        ::close(dirFd);
+    }
 }
 
 std::optional<MachineState> JsonMachineStateStore::load() {

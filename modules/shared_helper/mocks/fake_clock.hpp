@@ -7,10 +7,6 @@
 
 namespace vending::shared_helper::mocks {
 
-// Deterministic, single-threaded IClock for tests: nothing fires until
-// advance() is called, and advance() runs callbacks synchronously on the
-// calling thread. Lets FSM/timeout tests assert behavior without sleeping
-// on a real clock or dealing with SystemClock's background threads.
 class FakeClock final : public IClock {
 public:
     std::chrono::system_clock::time_point now() const override { return m_now; }
@@ -25,10 +21,6 @@ public:
 
     void cancelAll() override { m_timers.clear(); }
 
-    // Advances the fake clock and synchronously fires any timer whose
-    // deadline has now passed (in deadline order). A callback firing may
-    // itself schedule further timers; those are eligible in the same
-    // advance() call if their deadline has also passed.
     void advance(std::chrono::milliseconds delta) {
         m_now += delta;
         for (;;) {
