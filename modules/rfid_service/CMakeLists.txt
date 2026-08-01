@@ -10,7 +10,7 @@ add_library(rfid_service_dummy STATIC
 )
 
 target_include_directories(rfid_service_dummy PUBLIC ${CMAKE_SOURCE_DIR}/modules)
-target_link_libraries(rfid_service_dummy PUBLIC rfid_service vending::shared_helper)
+target_link_libraries(rfid_service_dummy PUBLIC rfid_service vending::shared_helper vending::vending_engine_service)
 target_compile_features(rfid_service_dummy PUBLIC cxx_std_20)
 
 add_library(vending::rfid_service::dummy ALIAS rfid_service_dummy)

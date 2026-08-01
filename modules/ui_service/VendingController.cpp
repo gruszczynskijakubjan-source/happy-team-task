@@ -4,24 +4,18 @@
 
 namespace vending::ui_service {
 
-VendingController::VendingController(vending_engine_service::TransactionService& transactionService,
-                                      vending_engine_service::VendingStateMachine& fsm,
-                                      cloud_service::CloudService& cloudService,
-                                      dispenser_service::IDispenser& dispenser,
-                                      rfid_service::ICardReader& cardReader,
-                                      shared_helper::logging::ILogger& logger, QObject* parent)
-    : QObject(parent),
-      m_transactionService(transactionService),
-      m_fsm(fsm),
-      m_cloudService(cloudService),
-      m_dispenser(dispenser),
-      m_cardReader(cardReader),
-      m_logger(logger) {
+VendingController::VendingController(vending_engine_service::IVendingEngineService& vendingEngineService
+    , cloud_service::CloudService& cloudService
+    , rfid_service::ICardReader& cardReader
+    , shared_helper::logging::ILogger& logger, QObject* parent)
+    : QObject(parent)
+    , m_vendingEngineService(vendingEngineService)
+    , m_cloudService(cloudService)
+    , m_cardReader(cardReader)
+    , m_logger(logger) {
     m_logger.log(shared_helper::logging::LogLevel::Trace, "VendingController", "VendingController()");
 
-    // DummyDispenser/DummyCardReader fire these callbacks from their own
-    // timer thread; queue back onto this object's (the GUI) thread.
-    m_dispenser.onProgress = [this](int progress) {
+    m_vendingEngineService.setOnDispenseProgress([this](int progress) {
         QMetaObject::invokeMethod(
             this,
             [this, progress] {
@@ -29,8 +23,8 @@ VendingController::VendingController(vending_engine_service::TransactionService&
                 emit dispenseProgressChanged();
             },
             Qt::QueuedConnection);
-    };
-    m_dispenser.onDispenseResult = [this](bool /*ok*/) {
+    });
+    m_vendingEngineService.setOnDispenseFinished([this](bool /*ok*/) {
         QMetaObject::invokeMethod(
             this,
             [this] {
@@ -38,7 +32,7 @@ VendingController::VendingController(vending_engine_service::TransactionService&
                 emit dispensingChanged();
             },
             Qt::QueuedConnection);
-    };
+    });
 }
 
 VendingController::~VendingController() {
@@ -79,7 +73,7 @@ void VendingController::selectProduct(const QString& productId) {
     m_dispenseProgress = 0;
     emit dispensingChanged();
     emit dispenseProgressChanged();
-    m_dispenser.dispense(productId.toStdString());
+    m_vendingEngineService.onProductSelected(productId.toStdString());
 }
 
 }  // namespace vending::ui_service

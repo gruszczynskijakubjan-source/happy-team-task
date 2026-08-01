@@ -17,8 +17,7 @@
 #include "shared_helper/logging/console_logger.hpp"
 #include "shared_helper/persistence/json_machine_state_store.hpp"
 #include "shared_helper/sql/sqlite_sql_adapter.hpp"
-#include "vending_engine_service/impl/state_machine.hpp"
-#include "vending_engine_service/interfaces/transaction_service.hpp"
+#include "vending_engine_service/impl/vending_engine_service.hpp"
 
 int main(int argc, char* argv[]) {
     using namespace vending;
@@ -38,14 +37,16 @@ int main(int argc, char* argv[]) {
     // No real hardware driver exists yet — dummy stand-ins simulate a
     // dispense cycle and a card tap, both triggerable from the UI.
     dispenser_service::DummyDispenser dispenser(clock, logger);
-    rfid_service::DummyCardReader cardReader(uuidGen, logger);
 
-    vending_engine_service::VendingStateMachine fsm(clock, logger);
-    vending_engine_service::TransactionService transactionService(fsm, stateStore, cloudService, dispenser,
-                                                                    cardReader, uuidGen, logger);
-    transactionService.start();
+    vending_engine_service::VendingEngineService vendingEngineService(stateStore, cloudService, dispenser, uuidGen,
+                                                                        logger);
+    vendingEngineService.start();
 
-    ui_service::VendingController controller(transactionService, fsm, cloudService, dispenser, cardReader, logger);
+    // DummyCardReader calls straight into vendingEngineService::onCardTapped()
+    // on a simulated tap, so it must be constructed after it.
+    rfid_service::DummyCardReader cardReader(uuidGen, vendingEngineService, logger);
+
+    ui_service::VendingController controller(vendingEngineService, cloudService, cardReader, logger);
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("controller", &controller);

@@ -1,4 +1,5 @@
 find_package(SQLite3 REQUIRED)
+find_package(Boost REQUIRED)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -22,6 +23,7 @@ target_link_libraries(shared_helper
   PUBLIC nlohmann_json::nlohmann_json
   PRIVATE SQLite::SQLite3
   PUBLIC Threads::Threads
+  PRIVATE Boost::boost
 )
 
 target_compile_features(shared_helper PUBLIC cxx_std_20)

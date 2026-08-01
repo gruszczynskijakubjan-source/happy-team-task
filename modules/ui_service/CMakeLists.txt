@@ -23,6 +23,7 @@ target_include_directories(ui_service PUBLIC ${CMAKE_SOURCE_DIR}/modules ${CMAKE
 target_link_libraries(ui_service PUBLIC
   vending::vending_engine_service
   vending::cloud_service
+  vending::rfid_service
   vending::shared_helper
   Qt6::Core
   Qt6::Gui

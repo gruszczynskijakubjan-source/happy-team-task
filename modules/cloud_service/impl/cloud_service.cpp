@@ -6,8 +6,11 @@ CloudService::CloudService(IOutboxStorage& storage
     , ICloudSender& sender
     , shared_helper::logging::ILogger& logger
     , BackoffPolicy policy)
-        : m_storage(storage), m_sender(sender), m_logger(logger), m_policy(policy) {
-        m_logger.log(shared_helper::logging::LogLevel::Trace, "CloudService", "CloudService()");
+        : m_storage(storage)
+        , m_sender(sender)
+        , m_logger(logger)
+        , m_policy(policy) {
+    m_logger.log(shared_helper::logging::LogLevel::Trace, "CloudService", "CloudService()");
     // TODO: implement — start m_workerThread running runLoop()
 }
 
