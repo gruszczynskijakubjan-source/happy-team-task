@@ -17,8 +17,7 @@ void SqliteOutboxStorage::store(const shared_helper::TransactionRecord& /*tx*/) 
 shared_helper::TransactionRecord SqliteOutboxStorage::getOldestRecord() {
     m_logger.log(shared_helper::logging::LogLevel::Trace, "SqliteOutboxStorage", "getOldestRecord()");
     // TODO: implement
-    TransactionRecord test{};
-    return test;
+    return shared_helper::TransactionRecord{};
 }
 
 void SqliteOutboxStorage::markSynced(const std::string& /*id*/) {

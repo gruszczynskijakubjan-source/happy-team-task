@@ -19,7 +19,7 @@ RestTransport::~RestTransport() {
     // TODO: implement
 }
 
-SendStatus RestTransport::sendSync(const shared_helper::TransactionRecord& /*tx*/) {
+void RestTransport::send(const shared_helper::TransactionRecord& /*tx*/) {
     m_logger.log(shared_helper::logging::LogLevel::Trace, "RestTransport", "send()");
     // TODO: implement
 }

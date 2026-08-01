@@ -25,7 +25,7 @@ const char* levelName(LogLevel level) {
 }  // namespace
 
 void ConsoleLogger::log(LogLevel level, std::string_view component, std::string_view message) {
-    std::cout << "[" << levelName(level) << "] " << component << ": " << message << "\n";
+    std::cout << "[" << levelName(level) << "] " << component << ": " << message << std::endl;
 }
 
 }  // namespace vending::shared_helper::logging
